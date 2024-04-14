@@ -5,11 +5,15 @@ editor: visual
 ---
 
 ```{r}
+#| label: setup
+#| message: false
+
 library(tidyverse)
 library(cmdstanr)
 library(rstan)
 library(bayesplot)
 library(bcogsci)
+library(brms)
 ```
 
 ## Mean and sd
@@ -160,4 +164,19 @@ uk92_data <- within(list(), {
 
 fit <- mod$sample(data = uk92_data, chains = 1)
 fit$summary()
+```
+
+## Log-normal
+
+```{r}
+ln_d <- tibble(
+  y = rlnorm(100, 4, 1)
+)
+
+make_stancode(
+  y ~ 1,
+  family = lognormal,
+  data = ln_d,
+  save_model = "code/lognormal.stan"
+)
 ```
