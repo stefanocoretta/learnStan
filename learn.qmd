@@ -1,0 +1,163 @@
+---
+title: "Learn"
+format: html
+editor: visual
+---
+
+```{r}
+library(tidyverse)
+library(cmdstanr)
+library(rstan)
+library(bayesplot)
+library(bcogsci)
+```
+
+## Mean and sd
+
+```{r}
+mod <- cmdstan_model("mean_sd/mean_sd.stan")
+```
+
+```{r}
+N <- 100
+dat <- list(
+  N = N,
+  x = rnorm(N, 3),
+  y = rnorm(N, 1)
+)
+
+fit <- mod$sample(data = dat, parallel_chains = 4)
+```
+
+```{r}
+fit$summary()
+```
+
+## Line
+
+```{r}
+mod <- cmdstan_model("est_line/line.stan")
+```
+
+```{r}
+set.seed(8988)
+N <- 10
+dat <- list(
+  N = N,
+  x1 = rnorm(N, 3),
+  y1 = rnorm(N, 1),
+  x2 = rnorm(N, 6),
+  y2 = rnorm(N, 5)
+)
+
+fit <- mod$sample(data = dat, parallel_chains = 4)
+```
+
+```{r}
+dat_f <- data.frame(
+  x = c(dat$x1, dat$x2),
+  y = c(dat$y1, dat$y2)
+)
+
+plot(dat_f$x, dat_f$y)
+```
+
+```{r}
+fit$summary()
+# fit$draws(format = "df")
+```
+
+## Gaussian
+
+```{r}
+mod <- cmdstan_model("gauss_simple/gauss_simple.stan")
+fit <- mod$sample(data = "gauss_simple/dat.json", chains = 1)
+fit$summary()
+fit2 <- mod$sample(data = "gauss_simple/dat2.json", chains = 1)
+fit2$summary()
+fit2_draws <- fit2$draws(format = "df")
+```
+
+```{r}
+mod <- cmdstan_model("gauss_simple/gauss_qr.stan")
+fit <- mod$sample(data = "gauss_simple/dat.json", chains = 1)
+fit$summary()
+fit2 <- mod$sample(data = "gauss_simple/dat2.json", chains = 1)
+fit2$summary()
+fit2_draws <- fit2$draws(format = "df")
+```
+
+## Stan 1
+
+```{r}
+Y <- rnorm(n = 100, mean = 3, sd = 10)
+lst_score_data <- list(y = Y, N = length(Y))
+# Fit the model with the default values of number of
+# chains and iterations: chains = 4, iter = 2000
+fit_score <- stan("stan1/stan1.stan", data = lst_score_data, cores = 4)
+# alternatively:
+# stan("normal.stan", data = lst_score_data)
+```
+
+```{r}
+traceplot(fit_score, pars = c("mu", "sigma"))
+print(fit_score, pars = c("mu", "sigma"))
+```
+
+```{r}
+df_fit_score <- as.data.frame(fit_score)
+mcmc_hex(df_fit_score, pars = c("mu", "sigma"))
+```
+
+## Cloze
+
+```{r}
+mod <- cmdstan_model("stan1/cloze.stan")
+lst_cloze_data <- list(k = 80, N = 100)
+fit <- mod$sample(data = lst_cloze_data, chains = 1)
+fit$summary()
+```
+
+## Pupil
+
+```{r}
+data("df_pupil")
+
+df_pupil <- df_pupil %>%
+  mutate(c_load = load - mean(load))
+ls_pupil <- list(
+  p_size = df_pupil$p_size,
+  c_load = df_pupil$c_load,
+  N = nrow(df_pupil)
+)
+mod <- cmdstan_model("stan1/pupil.stan")
+fit <- mod$sample(data = ls_pupil, chains = 4, parallel_chains = 4)
+fit$summary()
+fit_draws <- fit$draws(format = "df")
+mcmc_trace(fit$draws(), pars = c("alpha", "beta", "sigma"))
+mcmc_areas(fit$draws(), pars = c("beta", "sigma"))
+```
+
+## Bivariate
+
+```{r}
+(data("UKHouseOfCommons", package = "pscl"))
+mod <- cmdstan_model("area/bivariate.stan")
+
+uk92_data <- within(list(), {
+  y <- as.matrix(dplyr::select(UKHouseOfCommons, y1, y2))
+  X <- model.matrix(~ 0 + y1lag + y2lag + coninc + labinc + libinc, data = UKHouseOfCommons) %>% scale()
+  N <- nrow(y)
+  K <- ncol(y)
+  P <- ncol(X)
+  alpha_loc <- rep(0, K)
+  alpha_scale <- rep(10, K)
+  beta_loc <- matrix(0, K, P)
+  beta_scale <- matrix(2.5, K, P)
+  Sigma_corr_shape <- 2
+  Sigma_scale_scale <- 5
+})
+
+fit <- mod$sample(data = uk92_data, chains = 1)
+fit$summary()
+```
