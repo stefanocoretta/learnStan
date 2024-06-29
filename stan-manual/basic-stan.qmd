@@ -1,0 +1,99 @@
+---
+title: "Basic Stan"
+format: html
+---
+
+```{r}
+#| label: setup
+
+library(cmdstanr)
+library(bayesplot)
+```
+
+## Stan 1
+
+```{r}
+stan_1 <- cmdstan_model("stan-manual/stan_1.stan")
+```
+
+```{r}
+N <- 100
+dat <- list(
+  N = as.integer(N),
+  y = rnorm(N, 2)
+)
+
+plot(density(dat$y))
+```
+
+
+```{r}
+stan_1_fit <- stan_1$sample(data = dat, parallel_chains = 4)
+```
+
+```{r}
+stan_1_fit$summary()
+```
+
+## Stan 2
+
+```{r}
+stan_2 <- cmdstan_model("stan-manual/stan_2.stan")
+```
+
+```{r}
+N <- 100
+dat <- list(
+  N = as.integer(N),
+  y = rnorm(N, 1)
+)
+```
+
+```{r}
+stan_2_fit <- stan_2$sample(data = dat, parallel_chains = 4)
+```
+
+```{r}
+stan_2_fit$summary()
+```
+
+```{r}
+stan_2_draws <- stan_2_fit$draws(format = "draws_df")
+```
+
+```{r}
+mcmc_areas(stan_2_fit$draws(), pars = c("mu", "sigma"), prob = 0.66, prob_outer = 0.95, point_est = "median")
+```
+
+```{r}
+mcmc_trace(stan_2_fit$draws(), pars = c("mu", "sigma"), np = nuts_params(stan_2_fit))
+mcmc_rank_overlay(stan_2_fit$draws(), pars = c("mu", "sigma"))
+mcmc_hex(stan_2_fit$draws(), pars = c("mu", "sigma"))
+```
+
+## Stan 3
+
+```{r}
+stan_3 <- cmdstan_model("stan-manual/stan_3.stan")
+```
+
+```{r}
+N <- 3
+dat <- list(
+  N = as.integer(N),
+  y = rnorm(N, 1)
+)
+```
+
+```{r}
+stan_3_fit <- stan_3$sample(data = dat, parallel_chains = 4)
+```
+
+```{r}
+stan_3_fit$summary()
+```
+
+```{r}
+mcmc_trace(stan_3_fit$draws(), pars = c("mu", "sigma"), np = nuts_params(stan_3_fit))
+```
+
