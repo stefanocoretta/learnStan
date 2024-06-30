@@ -97,3 +97,11 @@ stan_3_fit$summary()
 mcmc_trace(stan_3_fit$draws(), pars = c("mu", "sigma"), np = nuts_params(stan_3_fit))
 ```
 
+## BRMS to Stan
+
+```{r}
+library(brms)
+
+make_stancode(count ~ 1, data = epilepsy, family = poisson())
+```
+
